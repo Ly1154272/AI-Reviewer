@@ -202,7 +202,7 @@ def load_config_from_env() -> ReviewerConfig:
     ai_config = AiConfig(
         provider=os.getenv("AI_PROVIDER", "openai"),
         model=os.getenv("AI_MODEL", "gpt-4"),
-        api_key=os.getenv("OPENAI_API_KEY"),
+        api_key=os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY"),
         base_url=os.getenv("AI_BASE_URL"),
     )
     
@@ -224,6 +224,83 @@ def load_config_from_env() -> ReviewerConfig:
     )
 
 
+def load_config_from_yaml(config_path: str) -> ReviewerConfig:
+    """Load configuration from YAML file."""
+    import yaml
+    from pathlib import Path
+    
+    config_file = Path(config_path)
+    if not config_file.exists():
+        console.print(f"[yellow]Warning: Config file not found: {config_path}[/yellow]")
+        return load_config_from_env()
+    
+    with open(config_file, 'r', encoding='utf-8') as f:
+        data = yaml.safe_load(f)
+    
+    if not data:
+        return load_config_from_env()
+    
+    git_data = data.get('git', {})
+    git_config = GitConfig(
+        url=git_data.get('url', ''),
+        token=git_data.get('token'),
+        branch=git_data.get('branch', 'main'),
+        review_mode=ReviewMode(git_data.get('review_mode', 'incremental')),
+    )
+    
+    scanner_data = data.get('scanner', {})
+    scanner_config = ScannerConfig(
+        scan_results=scanner_data.get('scan_results', []),
+    )
+    
+    rag_data = data.get('rag', {})
+    rag_config = RagConfig(
+        enabled=rag_data.get('enabled', True),
+        vector_store_dir=rag_data.get('vector_store_dir', './vector_store'),
+        embedding_model=rag_data.get('embedding_model', 'text-embedding-ada-002'),
+        chunk_size=rag_data.get('chunk_size', 1000),
+        chunk_overlap=rag_data.get('chunk_overlap', 100),
+        top_k=rag_data.get('top_k', 5),
+    )
+    
+    ai_data = data.get('ai', {})
+    ai_config = AiConfig(
+        provider=ai_data.get('provider', 'openai'),
+        model=ai_data.get('model', 'gpt-4'),
+        api_key=ai_data.get('api_key'),
+        base_url=ai_data.get('base_url'),
+        temperature=ai_data.get('temperature', 0.3),
+        max_tokens=ai_data.get('max_tokens', 4096),
+    )
+    
+    report_data = data.get('report', {})
+    report_config = ReportConfig(
+        output_format=report_data.get('output_format', 'json'),
+        output_path=report_data.get('output_path', 'review_report.json'),
+        include_false_positives=report_data.get('include_false_positives', True),
+    )
+    
+    rule_docs = data.get('rule_docs', [])
+    if isinstance(rule_docs, str):
+        rule_docs = [rule_docs]
+    
+    return ReviewerConfig(
+        git=git_config,
+        scanner=scanner_config,
+        rag=rag_config,
+        ai=ai_config,
+        report=report_config,
+        rule_docs=rule_docs,
+    )
+
+
+def load_config(config_path: Optional[str] = None) -> ReviewerConfig:
+    """Load configuration from YAML file or environment variables."""
+    if config_path:
+        return load_config_from_yaml(config_path)
+    return load_config_from_env()
+
+
 @click.group()
 @click.version_option(version="0.1.0")
 def cli():
@@ -232,6 +309,7 @@ def cli():
 
 
 @cli.command()
+@click.option("--config", "-c", help="Configuration file (YAML)")
 @click.option("--git-url", "-u", help="Git repository URL")
 @click.option("--git-token", "-t", help="Git access token")
 @click.option("--branch", "-b", default="main", help="Branch to review")
@@ -246,6 +324,7 @@ def cli():
 @click.option("--no-rag", is_flag=True, help="Disable RAG")
 @click.option("--vector-store", default="./vector_store", help="Vector store directory")
 def review(
+    config: Optional[str],
     git_url: Optional[str],
     git_token: Optional[str],
     branch: str,
@@ -261,16 +340,17 @@ def review(
     vector_store: str,
 ):
     """Run code review."""
+    config = load_config(config)
+    
     if not git_url:
-        console.print("[red]Error: --git-url is required[/red]")
-        sys.exit(1)
-    
-    config = load_config_from_env()
-    
-    config.git.url = git_url
-    config.git.token = git_token or config.git.token
-    config.git.branch = branch
-    config.git.review_mode = ReviewMode(mode)
+        if not config.git.url:
+            console.print("[red]Error: --git-url is required (or set in config file)[/red]")
+            sys.exit(1)
+    else:
+        config.git.url = git_url
+        config.git.token = git_token or config.git.token
+        config.git.branch = branch
+        config.git.review_mode = ReviewMode(mode)
     
     config.scanner.scan_results = list(scan_result) or config.scanner.scan_results
     
@@ -288,10 +368,10 @@ def review(
     if rule_doc:
         config.rule_docs = list(rule_doc)
     
-    config.ai.api_key = config.ai.api_key or os.getenv("OPENAI_API_KEY")
+    config.ai.api_key = config.ai.api_key or os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
     
     if not config.ai.api_key:
-        console.print("[red]Error: AI API key is required (set --ai-api-key or OPENAI_API_KEY)[/red]")
+        console.print("[red]Error: AI API key is required (set --ai-api-key, in config file, or OPENAI_API_KEY/ANTHROPIC_API_KEY env)[/red]")
         sys.exit(1)
     
     reviewer = Reviewer(config)

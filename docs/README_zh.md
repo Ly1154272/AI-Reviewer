@@ -156,7 +156,7 @@ python ai_reviewer.py build-index [OPTIONS]
 
 ### 配置文件
 
-除了命令行参数，也可以使用 YAML 配置文件：
+支持使用 YAML 配置文件来设置所有参数，无需配置环境变量：
 
 ```yaml
 # config.yaml
@@ -175,17 +175,38 @@ rag:
   enabled: true
   vector_store_dir: "./vector_store"
   embedding_model: "text-embedding-ada-002"
+  chunk_size: 1000
+  chunk_overlap: 100
+  top_k: 5
 
 ai:
   provider: "openai"
   model: "gpt-4"
+  api_key: "your-openai-api-key"  # 或在环境变量中设置
+  temperature: 0.3
+  max_tokens: 4096
 
 report:
   output_format: "json"
   output_path: "./review_report.json"
+  include_false_positives: true
 
 rule_docs:
   - "./docs/coding_standards.md"
+  - "./docs/security_guidelines.docx"
+```
+
+**使用配置文件运行：**
+
+```bash
+python ai_reviewer.py review --config config.yaml
+```
+
+**优先级**：命令行参数 > 配置文件 > 环境变量
+
+例如：使用配置文件，但通过命令行覆盖某个参数：
+```bash
+python ai_reviewer.py review --config config.yaml --output custom_report.json
 ```
 
 ### 环境变量
