@@ -1,0 +1,44 @@
+# AI Reviewer Configuration
+
+# Git Configuration
+git:
+  url: "https://github.com/your-org/your-repo"
+  # token: "your-github-token"  # Set via environment variable GIT_TOKEN
+  branch: "main"
+  review_mode: "incremental"  # "full" or "incremental"
+
+# Scanner Configuration
+scanner:
+  # scan_results:
+  #   - "pmd.xml"
+  #   - "spotbugs.xml"
+  #   - "sonarqube.json"
+
+# RAG Configuration
+rag:
+  enabled: true
+  vector_store_dir: "./vector_store"
+  embedding_model: "text-embedding-ada-002"  # or "bge-base-zh-v1.5" for Chinese
+  chunk_size: 1000
+  chunk_overlap: 100
+  top_k: 5
+
+# AI Configuration
+ai:
+  provider: "openai"  # "openai", "claude", or "azure"
+  model: "gpt-4"
+  # api_key: ""  # Set via environment variable
+  # base_url: ""  # For Azure OpenAI
+  temperature: 0.3
+  max_tokens: 4096
+
+# Report Configuration
+report:
+  output_format: "json"  # "json", "html", or "markdown"
+  output_path: "./review_report.json"
+  include_false_positives: true
+
+# Rule Documents
+rule_docs:
+  - "./docs/coding_standards.md"
+  - "./docs/security_guidelines.md"
