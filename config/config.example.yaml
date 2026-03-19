@@ -25,10 +25,10 @@ rag:
 
 # AI Configuration
 ai:
-  provider: "openai"  # "openai", "claude", or "azure"
+  provider: "openai"  # "openai", "claude", "azure", or "deepseek"
   model: "gpt-4"
   # api_key: ""  # Set via environment variable
-  # base_url: ""  # For Azure OpenAI
+  # base_url: ""  # For Azure OpenAI or custom OpenAI-compatible API
   temperature: 0.3
   max_tokens: 4096
 

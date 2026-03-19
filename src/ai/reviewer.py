@@ -188,12 +188,27 @@ class AzureOpenAIProvider(AiProvider):
             return {}
 
 
+class DeepSeekProvider(OpenAIProvider):
+    """DeepSeek API provider (OpenAI-compatible)."""
+    
+    DEFAULT_BASE_URL = "https://api.deepseek.com/v1"
+    DEFAULT_MODEL = "deepseek-chat"
+    
+    def __init__(self, config: AiConfig):
+        if not config.base_url:
+            config.base_url = self.DEFAULT_BASE_URL
+        if not config.model:
+            config.model = self.DEFAULT_MODEL
+        super().__init__(config)
+
+
 def create_ai_provider(config: AiConfig) -> AiProvider:
     """Create AI provider based on configuration."""
     providers = {
         "openai": OpenAIProvider,
         "claude": ClaudeProvider,
         "azure": AzureOpenAIProvider,
+        "deepseek": DeepSeekProvider,
     }
     
     provider_class = providers.get(config.provider.lower())
