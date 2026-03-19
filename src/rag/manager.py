@@ -80,7 +80,11 @@ class RAGManager:
             self._init_embeddings()
         
         try:
-            from langchain.text_splitter import MarkdownTextSplitter
+            try:
+                from langchain_text_splitter import MarkdownTextSplitter
+            except ImportError:
+                from langchain.text_splitter import MarkdownTextSplitter
+            
             from langchain_community.vectorstores import Chroma
             
             all_chunks = []
