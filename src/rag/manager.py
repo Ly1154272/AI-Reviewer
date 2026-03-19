@@ -80,11 +80,16 @@ class RAGManager:
             self._init_embeddings()
         
         try:
+            from langchain_community.text_splitters import MarkdownTextSplitter
             from langchain_community.vectorstores import Chroma
             
             all_chunks = []
             for doc in rule_documents:
-                chunks = self._simple_chunk_text(doc)
+                splitter = MarkdownTextSplitter(
+                    chunk_size=self.config.chunk_size,
+                    chunk_overlap=self.config.chunk_overlap,
+                )
+                chunks = splitter.split_text(doc)
                 all_chunks.extend(chunks)
             
             if all_chunks:
@@ -94,6 +99,11 @@ class RAGManager:
                     persist_directory=self.config.vector_store_dir,
                 )
                 self._vector_store.persist()
+        except ImportError as e:
+            raise ImportError(
+                f"Missing required package: {e}. "
+                "Please install: pip install langchain langchain-community"
+            )
         except Exception as e:
             raise RuntimeError(f"Failed to build RAG index: {e}")
     
