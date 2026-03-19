@@ -19,6 +19,7 @@ rag:
   enabled: true
   vector_store_dir: "./vector_store"
   embedding_model: "text-embedding-ada-002"  # or "bge-base-zh-v1.5" for Chinese
+  local_model_path: null  # 内网环境下使用本地模型路径，如 "./models/all-MiniLM-L6-v2"
   chunk_size: 1000
   chunk_overlap: 100
   top_k: 5

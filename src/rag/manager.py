@@ -29,8 +29,21 @@ class RAGManager:
     def _init_embeddings(self) -> None:
         """Initialize embedding model.
         
-        For intranet environments, use HuggingFace local embeddings.
+        For intranet environments, use local HuggingFace embeddings.
         """
+        if self.config.local_model_path:
+            try:
+                from langchain_community.embeddings import HuggingFaceEmbeddings
+                
+                self._embeddings = HuggingFaceEmbeddings(
+                    model_name=self.config.local_model_path,
+                )
+                return
+            except ImportError:
+                raise ImportError(
+                    f"Failed to load local model from {self.config.local_model_path}"
+                )
+        
         use_local = os.environ.get("USE_LOCAL_EMBEDDING", "true").lower() == "true"
         
         if use_local:

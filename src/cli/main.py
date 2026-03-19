@@ -258,6 +258,7 @@ def load_config_from_yaml(config_path: str) -> ReviewerConfig:
         enabled=rag_data.get('enabled', True),
         vector_store_dir=rag_data.get('vector_store_dir', './vector_store'),
         embedding_model=rag_data.get('embedding_model', 'text-embedding-ada-002'),
+        local_model_path=rag_data.get('local_model_path'),
         chunk_size=rag_data.get('chunk_size', 1000),
         chunk_overlap=rag_data.get('chunk_overlap', 100),
         top_k=rag_data.get('top_k', 5),
@@ -424,6 +425,7 @@ def build_index(config: Optional[str], rule_doc, vector_store: str, embedding_mo
         enabled=True,
         vector_store_dir=vector_store,
         embedding_model=embedding_model or cfg.rag.embedding_model,
+        local_model_path=cfg.rag.local_model_path,
     )
     
     manager = RAGManager(rag_config, api_key=api_key)

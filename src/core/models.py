@@ -154,6 +154,7 @@ class RagConfig(BaseModel):
     enabled: bool = True
     vector_store_dir: str = "./vector_store"
     embedding_model: str = "text-embedding-ada-002"
+    local_model_path: Optional[str] = None  # 内网环境下使用本地模型路径
     chunk_size: int = 1000
     chunk_overlap: int = 100
     top_k: int = 5
