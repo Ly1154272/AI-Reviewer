@@ -130,7 +130,7 @@ class TestRAGManager:
         
         mock_init.assert_not_called()
 
-    @patch('src.rag.manager.OpenAIEmbeddings')
+    @patch('langchain_openai.OpenAIEmbeddings')
     def test_init_embeddings_with_api_key(self, mock_embeddings):
         """Test initializing embeddings with API key."""
         config = RagConfig(
@@ -145,7 +145,7 @@ class TestRAGManager:
         assert call_kwargs["model"] == "text-embedding-ada-002"
         assert call_kwargs["api_key"] == "test-key"
 
-    @patch('src.rag.manager.OpenAIEmbeddings')
+    @patch('langchain_openai.OpenAIEmbeddings')
     def test_init_embeddings_without_api_key(self, mock_embeddings):
         """Test initializing embeddings without API key."""
         config = RagConfig(

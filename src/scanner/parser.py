@@ -33,8 +33,41 @@ class IssueParser(ABC):
             "blocker": Severity.CRITICAL,
             "major": Severity.WARNING,
             "minor": Severity.INFO,
+            "1": Severity.CRITICAL,
+            "2": Severity.CRITICAL,
+            "3": Severity.CRITICAL,
+            "4": Severity.CRITICAL,
+            "5": Severity.WARNING,
+            "6": Severity.WARNING,
+            "7": Severity.WARNING,
+            "8": Severity.WARNING,
+            "9": Severity.WARNING,
+            "10": Severity.INFO,
+            "11": Severity.INFO,
+            "12": Severity.INFO,
+            "13": Severity.INFO,
+            "14": Severity.INFO,
+            "15": Severity.INFO,
+            "16": Severity.INFO,
+            "17": Severity.INFO,
+            "18": Severity.INFO,
+            "19": Severity.INFO,
+            "20": Severity.INFO,
         }
-        return severity_map.get(severity.lower(), Severity.INFO)
+        
+        if severity.lower() in severity_map:
+            return severity_map[severity.lower()]
+        
+        try:
+            rank = int(severity)
+            if rank <= 4:
+                return Severity.CRITICAL
+            elif rank <= 9:
+                return Severity.WARNING
+            else:
+                return Severity.INFO
+        except (ValueError, TypeError):
+            return Severity.INFO
 
 
 class P3CParser(IssueParser):
@@ -50,16 +83,19 @@ class P3CParser(IssueParser):
             tree = ET.parse(file_path)
             root = tree.getroot()
             
-            for violation in root.findall(".//violation"):
-                issue = Issue(
-                    source=self.SOURCE,
-                    rule_id=violation.get("rule"),
-                    file=violation.get("filename", ""),
-                    line=int(violation.get("beginline", 0)),
-                    severity=self._map_severity(violation.get("priority", "Warning")),
-                    message=violation.text or "",
-                )
-                issues.append(issue)
+            for file_elem in root.findall(".//file"):
+                filename = file_elem.get("name", "")
+                
+                for violation in file_elem.findall("violation"):
+                    issue = Issue(
+                        source=self.SOURCE,
+                        rule_id=violation.get("rule"),
+                        file=filename,
+                        line=int(violation.get("beginline", 0)),
+                        severity=self._map_severity(violation.get("priority", "Warning")),
+                        message=(violation.text or "").strip(),
+                    )
+                    issues.append(issue)
                 
         except ET.ParseError:
             pass
@@ -212,13 +248,19 @@ class ESLintParser(IssueParser):
             
             if isinstance(data, list):
                 for item in data:
+                    severity = item.get("severity")
+                    if isinstance(severity, int):
+                        severity = "warning" if severity >= 1 else "info"
+                    else:
+                        severity = str(severity)
+                    
                     issue = Issue(
                         source=self.SOURCE,
                         rule_id=item.get("ruleId", ""),
                         file=item.get("filePath", ""),
                         line=item.get("line"),
                         column=item.get("column"),
-                        severity=self._map_severity(item.get("severity", 1)),
+                        severity=self._map_severity(severity),
                         message=item.get("message", ""),
                     )
                     issues.append(issue)
