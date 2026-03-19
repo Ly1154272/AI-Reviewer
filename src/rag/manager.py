@@ -27,7 +27,24 @@ class RAGManager:
         self._load_or_build_index()
     
     def _init_embeddings(self) -> None:
-        """Initialize embedding model."""
+        """Initialize embedding model.
+        
+        For intranet environments, use HuggingFace local embeddings.
+        """
+        use_local = os.environ.get("USE_LOCAL_EMBEDDING", "true").lower() == "true"
+        
+        if use_local:
+            try:
+                from langchain_community.embeddings import HuggingFaceEmbeddings
+                
+                model_name = "sentence-transformers/all-MiniLM-L6-v2"
+                self._embeddings = HuggingFaceEmbeddings(
+                    model_name=model_name,
+                )
+                return
+            except ImportError:
+                pass
+        
         try:
             from langchain_openai import OpenAIEmbeddings
             
@@ -48,8 +65,7 @@ class RAGManager:
                 )
             except ImportError:
                 raise ImportError(
-                    "Please install langchain-openai or langchain-community "
-                    "for embeddings"
+                    "Please install langchain-community for embeddings"
                 )
     
     def _load_or_build_index(self) -> None:
