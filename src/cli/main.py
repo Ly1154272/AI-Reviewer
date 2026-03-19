@@ -397,7 +397,7 @@ def review(
 
 @cli.command()
 @click.option("--config", "-c", help="Configuration file (YAML)")
-@click.option("--rule-doc", "-r", multiple=True, required=True, help="Rule document files")
+@click.option("--rule-doc", "-r", multiple=True, help="Rule document files (or use config file)")
 @click.option("--vector-store", default="./vector_store", help="Vector store directory")
 @click.option("--embedding-model", default="text-embedding-ada-002", help="Embedding model")
 def build_index(config: Optional[str], rule_doc, vector_store: str, embedding_model: str):
@@ -407,6 +407,13 @@ def build_index(config: Optional[str], rule_doc, vector_store: str, embedding_mo
     from src.rag.manager import RAGManager
     
     cfg = load_config(config)
+    
+    # Use rule docs from command line or config file
+    rule_docs_list = list(rule_doc) if rule_doc else cfg.rule_docs
+    
+    if not rule_docs_list:
+        console.print("[red]Error: --rule-doc is required (or set rule_docs in config file)[/red]")
+        sys.exit(1)
     
     api_key = cfg.ai.api_key or os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -418,9 +425,6 @@ def build_index(config: Optional[str], rule_doc, vector_store: str, embedding_mo
         vector_store_dir=vector_store,
         embedding_model=embedding_model or cfg.rag.embedding_model,
     )
-    
-    # Use rule docs from config if not provided via command line
-    rule_docs_list = list(rule_doc) if rule_doc else cfg.rule_docs
     
     manager = RAGManager(rag_config)
     
