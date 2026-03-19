@@ -248,12 +248,12 @@ def load_config_from_yaml(config_path: str) -> ReviewerConfig:
         review_mode=ReviewMode(git_data.get('review_mode', 'incremental')),
     )
     
-    scanner_data = data.get('scanner', {})
+    scanner_data = data.get('scanner') or {}
     scanner_config = ScannerConfig(
         scan_results=scanner_data.get('scan_results', []),
     )
     
-    rag_data = data.get('rag', {})
+    rag_data = data.get('rag') or {}
     rag_config = RagConfig(
         enabled=rag_data.get('enabled', True),
         vector_store_dir=rag_data.get('vector_store_dir', './vector_store'),
@@ -263,7 +263,7 @@ def load_config_from_yaml(config_path: str) -> ReviewerConfig:
         top_k=rag_data.get('top_k', 5),
     )
     
-    ai_data = data.get('ai', {})
+    ai_data = data.get('ai') or {}
     ai_config = AiConfig(
         provider=ai_data.get('provider', 'openai'),
         model=ai_data.get('model', 'gpt-4'),
@@ -273,7 +273,7 @@ def load_config_from_yaml(config_path: str) -> ReviewerConfig:
         max_tokens=ai_data.get('max_tokens', 4096),
     )
     
-    report_data = data.get('report', {})
+    report_data = data.get('report') or {}
     report_config = ReportConfig(
         output_format=report_data.get('output_format', 'json'),
         output_path=report_data.get('output_path', 'review_report.json'),
