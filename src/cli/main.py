@@ -396,31 +396,37 @@ def review(
 
 
 @cli.command()
+@click.option("--config", "-c", help="Configuration file (YAML)")
 @click.option("--rule-doc", "-r", multiple=True, required=True, help="Rule document files")
 @click.option("--vector-store", default="./vector_store", help="Vector store directory")
 @click.option("--embedding-model", default="text-embedding-ada-002", help="Embedding model")
-def build_index(rule_doc, vector_store: str, embedding_model: str):
+def build_index(config: Optional[str], rule_doc, vector_store: str, embedding_model: str):
     """Build RAG index from rule documents."""
     import os
     
     from src.rag.manager import RAGManager
     
-    api_key = os.getenv("OPENAI_API_KEY")
+    cfg = load_config(config)
+    
+    api_key = cfg.ai.api_key or os.getenv("OPENAI_API_KEY")
     if not api_key:
-        console.print("[red]Error: OPENAI_API_KEY is required[/red]")
+        console.print("[red]Error: OPENAI_API_KEY is required (set in config file or environment)[/red]")
         sys.exit(1)
     
-    config = RagConfig(
+    rag_config = RagConfig(
         enabled=True,
         vector_store_dir=vector_store,
-        embedding_model=embedding_model,
+        embedding_model=embedding_model or cfg.rag.embedding_model,
     )
     
-    manager = RAGManager(config)
+    # Use rule docs from config if not provided via command line
+    rule_docs_list = list(rule_doc) if rule_doc else cfg.rule_docs
+    
+    manager = RAGManager(rag_config)
     
     try:
         console.print("Loading rule documents...")
-        documents = load_rule_documents(list(rule_doc))
+        documents = load_rule_documents(rule_docs_list)
         console.print(f"Loaded {len(documents)} documents")
         
         console.print("Building index...")

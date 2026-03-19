@@ -122,7 +122,8 @@ python ai_reviewer.py review [OPTIONS]
 
 | 参数 | 简写 | 说明 | 默认值 |
 |------|------|------|--------|
-| `--git-url` | `-u` | Git 仓库 URL | 必需 |
+| `--config` | `-c` | 配置文件路径 (YAML) | 无 |
+| `--git-url` | `-u` | Git 仓库 URL | 必需（或在配置文件中设置） |
 | `--git-token` | `-t` | Git 访问令牌 | 环境变量 |
 | `--branch` | `-b` | 审查分支 | main |
 | `--mode` | `-m` | 审查模式 (full/incremental) | incremental |
