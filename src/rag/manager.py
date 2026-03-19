@@ -80,16 +80,11 @@ class RAGManager:
             self._init_embeddings()
         
         try:
-            from langchain_community.text_splitters import MarkdownTextSplitter
             from langchain_community.vectorstores import Chroma
             
             all_chunks = []
             for doc in rule_documents:
-                splitter = MarkdownTextSplitter(
-                    chunk_size=self.config.chunk_size,
-                    chunk_overlap=self.config.chunk_overlap,
-                )
-                chunks = splitter.split_text(doc)
+                chunks = self._simple_chunk_text(doc)
                 all_chunks.extend(chunks)
             
             if all_chunks:
@@ -101,6 +96,31 @@ class RAGManager:
                 self._vector_store.persist()
         except Exception as e:
             raise RuntimeError(f"Failed to build RAG index: {e}")
+    
+    def _simple_chunk_text(self, text: str) -> list[str]:
+        """Simple text chunking without langchain dependency."""
+        import re
+        
+        chunks = []
+        lines = text.split('\n')
+        current_chunk = []
+        current_size = 0
+        
+        for line in lines:
+            line_size = len(line)
+            
+            if current_size + line_size > self.config.chunk_size and current_chunk:
+                chunks.append('\n'.join(current_chunk))
+                current_chunk = []
+                current_size = 0
+            
+            current_chunk.append(line)
+            current_size += line_size + 1
+        
+        if current_chunk:
+            chunks.append('\n'.join(current_chunk))
+        
+        return chunks
     
     def retrieve_relevant_rules(
         self,
