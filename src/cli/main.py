@@ -125,7 +125,7 @@ class Reviewer:
         self.ai_reviewer = AiReviewer(provider)
         
         if self.config.rag.enabled:
-            self.rag_manager = RAGManager(self.config.rag)
+            self.rag_manager = RAGManager(self.config.rag, api_key=self.config.ai.api_key)
             self.rag_manager.initialize()
             
             if self.rag_manager.is_ready():
@@ -426,7 +426,7 @@ def build_index(config: Optional[str], rule_doc, vector_store: str, embedding_mo
         embedding_model=embedding_model or cfg.rag.embedding_model,
     )
     
-    manager = RAGManager(rag_config)
+    manager = RAGManager(rag_config, api_key=api_key)
     
     try:
         console.print("Loading rule documents...")

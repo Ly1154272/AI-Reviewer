@@ -12,8 +12,9 @@ from src.core.models import RagConfig
 class RAGManager:
     """Manager for RAG-based rule retrieval."""
     
-    def __init__(self, config: RagConfig):
+    def __init__(self, config: RagConfig, api_key: Optional[str] = None):
         self.config = config
+        self.api_key = api_key
         self._vector_store = None
         self._embeddings = None
     
@@ -30,9 +31,13 @@ class RAGManager:
         try:
             from langchain_openai import OpenAIEmbeddings
             
-            self._embeddings = OpenAIEmbeddings(
-                model=self.config.embedding_model,
-            )
+            kwargs = {
+                "model": self.config.embedding_model,
+            }
+            if self.api_key:
+                kwargs["api_key"] = self.api_key
+            
+            self._embeddings = OpenAIEmbeddings(**kwargs)
         except ImportError:
             try:
                 from langchain_community.embeddings import HuggingFaceEmbeddings
