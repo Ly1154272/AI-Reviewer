@@ -35,8 +35,10 @@ class RAGManager:
             try:
                 from langchain_community.embeddings import HuggingFaceEmbeddings
                 
+                model_path = self._find_model_path(self.config.local_model_path)
+                
                 self._embeddings = HuggingFaceEmbeddings(
-                    model_name=self.config.local_model_path,
+                    model_name=model_path,
                 )
                 return
             except ImportError:
@@ -80,6 +82,43 @@ class RAGManager:
                 raise ImportError(
                     "Please install langchain-community for embeddings"
                 )
+    
+    def _find_model_path(self, base_path: str) -> str:
+        """Find the actual model folder from cache directory.
+        
+        HuggingFace cache structure:
+        models--xxx--yyy/
+        └── snapshots/
+            └── <hash>/
+                ├── config.json
+                └── model files
+        """
+        import json
+        
+        base_path = os.path.expanduser(base_path)
+        
+        config_file = os.path.join(base_path, "config.json")
+        if os.path.exists(config_file):
+            return base_path
+        
+        snapshots_path = os.path.join(base_path, "snapshots")
+        if os.path.exists(snapshots_path):
+            for snapshot in os.listdir(snapshots_path):
+                snapshot_path = os.path.join(snapshots_path, snapshot)
+                if os.path.isdir(snapshot_path):
+                    config_file = os.path.join(snapshot_path, "config.json")
+                    if os.path.exists(config_file):
+                        try:
+                            with open(config_file, 'r') as f:
+                                json.load(f)
+                            return snapshot_path
+                        except:
+                            pass
+        
+        raise ValueError(
+            f"Could not find model in {base_path}. "
+            "Please ensure the folder contains config.json and model files."
+        )
     
     def _load_or_build_index(self) -> None:
         """Load existing index or build new one."""
