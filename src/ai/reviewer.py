@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+import logging
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
 from src.core.models import AiAnalysis, AiConfig, Issue, IssueSource, Severity
+
+logger = logging.getLogger(__name__)
 
 
 class AiProvider(ABC):
@@ -307,7 +310,8 @@ class AiReviewer:
         try:
             result = await self.provider.chat_json(prompt)
             return self._parse_review_result(result)
-        except Exception:
+        except Exception as e:
+            logger.warning(f"AI review failed: {e}")
             return []
     
     def _build_general_review_prompt(self, code_diff: str) -> str:
@@ -429,7 +433,8 @@ class FalsePositiveAnalyzer:
                 reason=reason,
                 suggestion=suggestion,
             )
-        except Exception:
+        except Exception as e:
+            logger.error(f"False positive analysis failed: {e}", exc_info=True)
             return AiAnalysis(
                 is_false_positive=False,
                 confidence=0.0,

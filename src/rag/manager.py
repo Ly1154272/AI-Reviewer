@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
 from typing import Optional
 
 from src.core.models import RagConfig
+
+logger = logging.getLogger(__name__)
 
 
 class RAGManager:
@@ -129,8 +132,8 @@ class RAGManager:
                             with open(config_file, 'r') as f:
                                 json.load(f)
                             return snapshot_path
-                        except:
-                            pass
+                        except Exception as e:
+                            logger.warning(f"Failed to load config.json: {e}")
         
         raise ValueError(
             f"Could not find model in {base_path}. "
@@ -153,7 +156,8 @@ class RAGManager:
                 persist_directory=self.config.vector_store_dir,
                 embedding_function=self._embeddings,
             )
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to load vector store: {e}", exc_info=True)
             self._vector_store = None
     
     def build_index(self, rule_documents: list[str]) -> None:
@@ -240,7 +244,8 @@ class RAGManager:
                 k=k,
             )
             return [doc.page_content for doc in docs]
-        except Exception:
+        except Exception as e:
+            logger.error(f"Rule retrieval failed: {e}", exc_info=True)
             return []
     
     def retrieve_rules_with_intent(
@@ -270,7 +275,8 @@ class RAGManager:
             )
             
             return [doc.page_content for doc in docs]
-        except Exception:
+        except Exception as e:
+            logger.error(f"Rule retrieval with intent failed: {e}", exc_info=True)
             return []
     
     def is_ready(self) -> bool:
@@ -328,8 +334,8 @@ def _load_single_file(file_path: Path) -> Optional[str]:
             return _load_docx_file(file_path)
         elif ext == '.pdf':
             return _load_pdf_file(file_path)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Failed to load file {file_path}: {e}")
     
     return None
 
@@ -347,10 +353,10 @@ def _load_text_file(file_path: Path) -> Optional[str]:
                 content = f.read()
                 if content.strip():
                     return content
-        except Exception:
-            pass
-    except Exception:
-        pass
+        except Exception as e:
+            logger.warning(f"Failed to load text file with gbk encoding: {e}")
+    except Exception as e:
+        logger.error(f"Failed to load text file: {e}")
     
     return None
 
@@ -381,8 +387,8 @@ def _load_docx_file(file_path: Path) -> Optional[str]:
             "python-docx is required for .docx files. "
             "Install with: pip install python-docx"
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Failed to load docx file: {e}")
     
     return None
 
@@ -408,7 +414,7 @@ def _load_pdf_file(file_path: Path) -> Optional[str]:
             "pypdf is required for .pdf files. "
             "Install with: pip install pypdf"
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Failed to load PDF file: {e}")
     
     return None

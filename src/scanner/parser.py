@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import logging
 import xml.etree.ElementTree as ET
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
 
 from src.core.models import Issue, IssueSource, Severity
+
+logger = logging.getLogger(__name__)
 
 
 class IssueParser(ABC):
@@ -97,10 +100,10 @@ class P3CParser(IssueParser):
                     )
                     issues.append(issue)
                 
-        except ET.ParseError:
-            pass
-        except Exception:
-            pass
+        except ET.ParseError as e:
+            logger.warning(f"XML parse error: {e}")
+        except Exception as e:
+            logger.error(f"Failed to parse P3C results: {e}")
         
         return issues
 
@@ -133,10 +136,10 @@ class SpotBugsParser(IssueParser):
                 )
                 issues.append(issue)
                 
-        except ET.ParseError:
-            pass
-        except Exception:
-            pass
+        except ET.ParseError as e:
+            logger.warning(f"XML parse error: {e}")
+        except Exception as e:
+            logger.error(f"Failed to parse SpotBugs XML results: {e}")
         
         return issues
     
@@ -160,8 +163,8 @@ class SpotBugsParser(IssueParser):
                 )
                 issues.append(issue)
                 
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Failed to parse SpotBugs JSON results: {e}")
         
         return issues
 
@@ -194,10 +197,10 @@ class CheckstyleParser(IssueParser):
                     )
                     issues.append(issue)
                     
-        except ET.ParseError:
-            pass
-        except Exception:
-            pass
+        except ET.ParseError as e:
+            logger.warning(f"XML parse error: {e}")
+        except Exception as e:
+            logger.error(f"Failed to parse Checkstyle results: {e}")
         
         return issues
 
@@ -227,8 +230,8 @@ class SonarQubeParser(IssueParser):
                 )
                 issues.append(issue)
                 
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Failed to parse SonarQube results: {e}")
         
         return issues
 
@@ -265,8 +268,8 @@ class ESLintParser(IssueParser):
                     )
                     issues.append(issue)
                     
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Failed to parse ESLint results: {e}")
         
         return issues
 

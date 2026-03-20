@@ -49,6 +49,8 @@ report:
   output_format: "json"  # "json", "html", or "markdown"
   output_path: "./review_report.json"
   include_false_positives: true
+  log_level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_file: null  # 日志文件路径，如 "./ai-reviewer.log"，null 则只输出到控制台
 
 # Rule Documents
 rule_docs:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import sys
 from pathlib import Path
@@ -18,6 +19,7 @@ from src.ai.reviewer import (
     FalsePositiveAnalyzer,
     create_ai_provider,
 )
+from src.core.logging_config import setup_logging
 from src.core.models import (
     AiConfig,
     GitConfig,
@@ -291,6 +293,8 @@ def load_config_from_yaml(config_path: str) -> ReviewerConfig:
         output_format=report_data.get('output_format', 'json'),
         output_path=report_data.get('output_path', 'review_report.json'),
         include_false_positives=report_data.get('include_false_positives', True),
+        log_level=report_data.get('log_level', 'INFO'),
+        log_file=report_data.get('log_file'),
     )
     
     rule_docs = data.get('rule_docs', [])
@@ -354,6 +358,10 @@ def review(
 ):
     """Run code review."""
     config = load_config(config)
+    
+    log_level = getattr(logging, config.report.log_level.upper(), logging.INFO)
+    setup_logging(log_level=log_level, log_file=config.report.log_file)
+    logger = logging.getLogger(__name__)
     
     if not git_url:
         if not config.git.url:
@@ -420,6 +428,9 @@ def build_index(config: Optional[str], rule_doc, vector_store: str, embedding_mo
     from src.rag.manager import RAGManager
     
     cfg = load_config(config)
+    
+    log_level = getattr(logging, cfg.report.log_level.upper(), logging.INFO)
+    setup_logging(log_level=log_level, log_file=cfg.report.log_file)
     
     # Use rule docs from command line or config file
     rule_docs_list = list(rule_doc) if rule_doc else cfg.rule_docs

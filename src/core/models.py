@@ -177,6 +177,8 @@ class ReportConfig(BaseModel):
     output_path: str = "./review_report.json"
     include_false_positives: bool = True
     template_path: Optional[str] = None
+    log_level: str = "INFO"
+    log_file: Optional[str] = None
 
 
 class ReviewerConfig(BaseModel):

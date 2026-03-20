@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import tempfile
 from pathlib import Path
@@ -11,6 +12,8 @@ import git
 from git import Repo
 
 from src.core.models import CodeDiff, GitConfig, ReviewMode
+
+logger = logging.getLogger(__name__)
 
 
 class GitClient:
@@ -87,7 +90,8 @@ class GitClient:
                     changed_files.append(diff.b_path)
             
             return list(set(changed_files))
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to get incremental changes: {e}")
             return self._get_untracked_and_staged()
     
     def _get_untracked_and_staged(self) -> list[str]:
@@ -128,10 +132,10 @@ class GitClient:
             if os.path.exists(full_path):
                 with open(full_path, 'r', encoding='utf-8') as f:
                     return f.read()
-        except KeyError:
-            pass
-        except Exception:
-            pass
+        except KeyError as e:
+            logger.warning(f"KeyError when getting file content: {e}")
+        except Exception as e:
+            logger.error(f"Failed to get file content: {e}")
         return None
     
     def get_diff(self, file_path: str) -> Optional[str]:
@@ -144,8 +148,8 @@ class GitClient:
             diff = self.repo.index.diff("HEAD", paths=[file_path])
             if diff:
                 return str(diff[0])
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Failed to get diff: {e}")
         return None
     
     def get_current_commit(self) -> str:
@@ -199,7 +203,8 @@ class DiffAnalyzer:
                     status="added",
                 )
                 diffs.append(code_diff)
-            except Exception:
+            except Exception as e:
+                logger.warning(f"Failed to get diff for {file_path}: {e}")
                 code_diff = CodeDiff(
                     file_path=file_path,
                     status="unknown",
