@@ -133,10 +133,10 @@ class Reviewer:
             if self.rag_manager.is_ready():
                 if self.config.rag.use_code_intent:
                     all_source_codes = {}
-                    for file_info in changed_files:
-                        content = self.git_client.get_file_content(file_info.new_path or file_info.a_path)
+                    for file_path in changed_files:
+                        content = self.git_client.get_file_content(file_path)
                         if content:
-                            all_source_codes[file_info.new_path or file_info.a_path] = content
+                            all_source_codes[file_path] = content
                     
                     for file_path, source_code in all_source_codes.items():
                         file_rules = self.rag_manager.retrieve_rules_with_intent(
