@@ -190,7 +190,6 @@ class RAGManager:
                     embedding=self._embeddings,
                     persist_directory=self.config.vector_store_dir,
                 )
-                self._vector_store.persist()
         except ImportError as e:
             raise ImportError(
                 f"Missing required package: {e}. "
