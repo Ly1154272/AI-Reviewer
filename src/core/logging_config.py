@@ -11,10 +11,15 @@ def setup_logging(log_level: str = "INFO", log_file: str = None) -> None:
     """Setup logging configuration.
     
     Args:
-        log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) or integer
         log_file: Optional log file path
     """
-    level = getattr(logging, log_level.upper(), logging.INFO)
+    if isinstance(log_level, int):
+        level = log_level
+    elif isinstance(log_level, str):
+        level = getattr(logging, log_level.upper(), logging.INFO)
+    else:
+        level = logging.INFO
     
     handlers = [logging.StreamHandler(sys.stdout)]
     
