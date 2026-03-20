@@ -202,6 +202,73 @@ class DeepSeekProvider(OpenAIProvider):
         super().__init__(config)
 
 
+class OllamaProvider(AiProvider):
+    """Ollama local LLM provider."""
+    
+    DEFAULT_BASE_URL = "http://localhost:11434"
+    DEFAULT_MODEL = "llama2"
+    
+    def __init__(self, config: AiConfig):
+        self.config = config
+        self._client = None
+    
+    def _get_client(self):
+        """Get or create Ollama client."""
+        if self._client is None:
+            try:
+                from openai import AsyncOpenAI
+                
+                base_url = self.config.base_url or self.DEFAULT_BASE_URL
+                model = self.config.model or self.DEFAULT_MODEL
+                
+                self._client = AsyncOpenAI(
+                    base_url=f"{base_url}/v1",
+                    api_key="ollama",
+                )
+                self._model = model
+            except ImportError:
+                raise ImportError("Please install openai package")
+        
+        return self._client
+    
+    async def chat(self, prompt: str) -> str:
+        """Send chat request."""
+        client = self._get_client()
+        
+        response = await client.chat.completions.create(
+            model=self._model,
+            messages=[
+                {"role": "system", "content": "You are an expert code reviewer."},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=self.config.temperature,
+            max_tokens=self.config.max_tokens,
+        )
+        
+        return response.choices[0].message.content
+    
+    async def chat_json(self, prompt: str) -> dict[str, Any]:
+        """Send chat request and parse JSON response."""
+        full_prompt = f"{prompt}\n\nPlease respond with valid JSON only."
+        
+        response_text = await self.chat(full_prompt)
+        
+        response_text = response_text.strip()
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        if response_text.startswith("```"):
+            response_text = response_text[3:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+        
+        response_text = response_text.strip()
+        
+        try:
+            return json.loads(response_text)
+        except json.JSONDecodeError:
+            return {}
+
+
 def create_ai_provider(config: AiConfig) -> AiProvider:
     """Create AI provider based on configuration."""
     providers = {
@@ -209,6 +276,7 @@ def create_ai_provider(config: AiConfig) -> AiProvider:
         "claude": ClaudeProvider,
         "azure": AzureOpenAIProvider,
         "deepseek": DeepSeekProvider,
+        "ollama": OllamaProvider,
     }
     
     provider_class = providers.get(config.provider.lower())

@@ -124,21 +124,32 @@ class Reviewer:
         provider = create_ai_provider(self.config.ai)
         self.ai_reviewer = AiReviewer(provider)
         
+        relevant_rules = []
+        
         if self.config.rag.enabled:
             self.rag_manager = RAGManager(self.config.rag, api_key=self.config.ai.api_key)
             self.rag_manager.initialize()
             
             if self.rag_manager.is_ready():
-                relevant_rules = self.rag_manager.retrieve_relevant_rules(diff_text)
+                if self.config.rag.use_code_intent:
+                    all_source_codes = {}
+                    for file_info in changed_files:
+                        content = self.git_client.get_file_content(file_info.new_path or file_info.a_path)
+                        if content:
+                            all_source_codes[file_info.new_path or file_info.a_path] = content
+                    
+                    for file_path, source_code in all_source_codes.items():
+                        file_rules = self.rag_manager.retrieve_rules_with_intent(
+                            file_path, source_code
+                        )
+                        relevant_rules.extend(file_rules)
+                else:
+                    relevant_rules = self.rag_manager.retrieve_relevant_rules(diff_text)
             else:
                 documents = load_rule_documents(self.config.rule_docs)
                 if documents:
                     self.rag_manager.build_index(documents)
                     relevant_rules = self.rag_manager.retrieve_relevant_rules(diff_text)
-                else:
-                    relevant_rules = []
-        else:
-            relevant_rules = []
         
         return await self.ai_reviewer.review_code(diff_text, relevant_rules)
     
@@ -259,6 +270,7 @@ def load_config_from_yaml(config_path: str) -> ReviewerConfig:
         vector_store_dir=rag_data.get('vector_store_dir', './vector_store'),
         embedding_model=rag_data.get('embedding_model', 'text-embedding-ada-002'),
         local_model_path=rag_data.get('local_model_path'),
+        use_code_intent=rag_data.get('use_code_intent', False),
         chunk_size=rag_data.get('chunk_size', 1000),
         chunk_overlap=rag_data.get('chunk_overlap', 100),
         top_k=rag_data.get('top_k', 5),

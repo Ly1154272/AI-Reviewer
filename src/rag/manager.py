@@ -27,9 +27,11 @@ class RAGManager:
         self._load_or_build_index()
     
     def _init_embeddings(self) -> None:
-        """Initialize embedding model.
+        """Initialize embedding model based on configuration.
         
-        For intranet environments, use local HuggingFace embeddings.
+        Supports:
+        - OpenAI models (text-embedding-ada-002, etc.)
+        - Local HuggingFace models (bge-small-zh-v1.5, all-MiniLM-L6-v2, etc.)
         """
         if self.config.local_model_path:
             try:
@@ -46,13 +48,28 @@ class RAGManager:
                     f"Failed to load local model from {self.config.local_model_path}"
                 )
         
+        embedding_model = self.config.embedding_model
+        
+        if embedding_model.startswith("text-embedding-"):
+            try:
+                from langchain_openai import OpenAIEmbeddings
+                
+                kwargs = {"model": embedding_model}
+                if self.api_key:
+                    kwargs["api_key"] = self.api_key
+                
+                self._embeddings = OpenAIEmbeddings(**kwargs)
+                return
+            except ImportError:
+                pass
+        
         use_local = os.environ.get("USE_LOCAL_EMBEDDING", "true").lower() == "true"
         
         if use_local:
             try:
                 from langchain_community.embeddings import HuggingFaceEmbeddings
                 
-                model_name = "sentence-transformers/all-MiniLM-L6-v2"
+                model_name = embedding_model if embedding_model else "sentence-transformers/all-MiniLM-L6-v2"
                 self._embeddings = HuggingFaceEmbeddings(
                     model_name=model_name,
                 )
@@ -223,6 +240,36 @@ class RAGManager:
                 code_context,
                 k=k,
             )
+            return [doc.page_content for doc in docs]
+        except Exception:
+            return []
+    
+    def retrieve_rules_with_intent(
+        self,
+        file_path: str,
+        source_code: str,
+        top_k: Optional[int] = None,
+    ) -> list[str]:
+        """Retrieve relevant rules using AST-based code intent extraction.
+        
+        This method extracts the natural language intent from code using AST,
+        then uses that intent for vector search instead of raw code.
+        """
+        if not self.config.enabled or self._vector_store is None:
+            return []
+        
+        try:
+            from src.rag.intent import extract_code_intent
+            
+            intent = extract_code_intent(file_path, source_code)
+            
+            k = top_k or self.config.top_k
+            
+            docs = self._vector_store.similarity_search(
+                intent,
+                k=k,
+            )
+            
             return [doc.page_content for doc in docs]
         except Exception:
             return []

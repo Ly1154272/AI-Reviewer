@@ -154,7 +154,8 @@ class RagConfig(BaseModel):
     enabled: bool = True
     vector_store_dir: str = "./vector_store"
     embedding_model: str = "text-embedding-ada-002"
-    local_model_path: Optional[str] = None  # 内网环境下使用本地模型路径
+    local_model_path: Optional[str] = None
+    use_code_intent: bool = False  # 是否使用 AST 提取代码意图
     chunk_size: int = 1000
     chunk_overlap: int = 100
     top_k: int = 5
@@ -162,7 +163,7 @@ class RagConfig(BaseModel):
 
 class AiConfig(BaseModel):
     """AI provider configuration."""
-    provider: str = "openai"
+    provider: str = "openai"  # openai, claude, azure, deepseek, ollama
     model: str = "gpt-4"
     api_key: Optional[str] = None
     base_url: Optional[str] = None
