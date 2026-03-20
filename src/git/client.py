@@ -25,10 +25,13 @@ class GitClient:
         """Clone repository to temporary directory."""
         clone_url = self._get_clone_url()
         self._temp_dir = tempfile.mkdtemp(prefix="ai-reviewer-")
+        
+        import git
         self._repo = Repo.clone_from(
             clone_url,
             self._temp_dir,
             branch=self.config.branch,
+            timeout=600,
         )
         return self._temp_dir
     
