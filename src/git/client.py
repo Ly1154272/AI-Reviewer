@@ -123,6 +123,8 @@ class GitClient:
     
     def get_file_content(self, file_path: str, commit: Optional[str] = None) -> Optional[str]:
         """Get file content at specific commit or current."""
+        encodings = ['utf-8', 'gbk', 'gb2312', 'latin-1']
+        
         try:
             if commit:
                 blob = self.repo.commit(commit).tree[file_path]
@@ -130,8 +132,13 @@ class GitClient:
             
             full_path = os.path.join(self._temp_dir, file_path)
             if os.path.exists(full_path):
-                with open(full_path, 'r', encoding='utf-8') as f:
-                    return f.read()
+                for encoding in encodings:
+                    try:
+                        with open(full_path, 'r', encoding=encoding) as f:
+                            return f.read()
+                    except UnicodeDecodeError:
+                        continue
+                logger.warning(f"Failed to decode file {file_path} with any encoding")
         except KeyError as e:
             logger.warning(f"KeyError when getting file content: {e}")
         except Exception as e:
