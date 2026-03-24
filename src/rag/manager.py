@@ -38,7 +38,7 @@ class RAGManager:
         """
         if self.config.local_model_path:
             try:
-                from langchain_community.embeddings import HuggingFaceEmbeddings
+                from langchain_huggingface import HuggingFaceEmbeddings
                 
                 model_path = self._find_model_path(self.config.local_model_path)
                 
@@ -46,8 +46,18 @@ class RAGManager:
                     model_name=model_path,
                 )
                 return
-            except Exception as e:
-                logger.warning(f"Failed to load local model: {e}, falling back to cloud model")
+            except ImportError:
+                try:
+                    from langchain_community.embeddings import HuggingFaceEmbeddings
+                    
+                    model_path = self._find_model_path(self.config.local_model_path)
+                    
+                    self._embeddings = HuggingFaceEmbeddings(
+                        model_name=model_path,
+                    )
+                    return
+                except Exception as e:
+                    logger.warning(f"Failed to load local model: {e}, falling back to cloud model")
         
         embedding_model = self.config.embedding_model
         
