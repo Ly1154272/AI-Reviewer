@@ -293,6 +293,8 @@ class OllamaProvider(AiProvider):
 
 def create_ai_provider(config: AiConfig) -> AiProvider:
     """Create AI provider based on configuration."""
+    logger.info(f"create_ai_provider called: provider={config.provider}, model={config.model}, base_url={config.base_url}")
+    
     providers = {
         "openai": OpenAIProvider,
         "claude": ClaudeProvider,
