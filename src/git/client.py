@@ -23,6 +23,7 @@ class GitClient:
         self.config = config
         self._repo: Optional[Repo] = None
         self._temp_dir: Optional[str] = None
+        self._is_local: bool = False
     
     def setup(self) -> str:
         """Setup repository (clone from URL or use local path)."""
@@ -42,6 +43,7 @@ class GitClient:
         
         self._repo = Repo(local_path)
         self._temp_dir = str(local_path)
+        self._is_local = True
         logger.info(f"Using local repository: {local_path}")
         return str(local_path)
     
@@ -191,7 +193,7 @@ class GitClient:
     def cleanup(self) -> None:
         """Clean up temporary directory."""
         import shutil
-        if self._temp_dir and os.path.exists(self._temp_dir):
+        if self._temp_dir and os.path.exists(self._temp_dir) and not self._is_local:
             shutil.rmtree(self._temp_dir, ignore_errors=True)
 
 
