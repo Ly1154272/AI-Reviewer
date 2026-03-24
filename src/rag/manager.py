@@ -46,10 +46,8 @@ class RAGManager:
                     model_name=model_path,
                 )
                 return
-            except ImportError:
-                raise ImportError(
-                    f"Failed to load local model from {self.config.local_model_path}"
-                )
+            except Exception as e:
+                logger.warning(f"Failed to load local model: {e}, falling back to cloud model")
         
         embedding_model = self.config.embedding_model
         
