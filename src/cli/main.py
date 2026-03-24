@@ -363,6 +363,8 @@ def review(
     setup_logging(log_level=log_level, log_file=config.report.log_file)
     logger = logging.getLogger(__name__)
     
+    logger.info(f"AI Config loaded: provider={config.ai.provider}, model={config.ai.model}, base_url={config.ai.base_url}")
+    
     if not git_url:
         if not config.git.url:
             console.print("[red]Error: --git-url is required (or set in config file)[/red]")
