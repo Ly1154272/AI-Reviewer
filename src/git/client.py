@@ -24,6 +24,27 @@ class GitClient:
         self._repo: Optional[Repo] = None
         self._temp_dir: Optional[str] = None
     
+    def setup(self) -> str:
+        """Setup repository (clone from URL or use local path)."""
+        if self.config.local_path:
+            return self._setup_local()
+        return self.clone()
+    
+    def _setup_local(self) -> str:
+        """Use local repository path."""
+        local_path = Path(self.config.local_path).resolve()
+        
+        if not local_path.exists():
+            raise ValueError(f"Local path does not exist: {local_path}")
+        
+        if not (local_path / ".git").exists():
+            raise ValueError(f"Local path is not a git repository: {local_path}")
+        
+        self._repo = Repo(local_path)
+        self._temp_dir = str(local_path)
+        logger.info(f"Using local repository: {local_path}")
+        return str(local_path)
+    
     def clone(self) -> str:
         """Clone repository to temporary directory."""
         import os

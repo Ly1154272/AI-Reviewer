@@ -2,7 +2,8 @@
 
 # Git Configuration
 git:
-  url: "https://github.com/your-org/your-repo"
+  # url: "https://github.com/your-org/your-repo"  # Git 仓库 URL
+  # local_path: "/path/to/local/repo"  # 本地仓库路径 (二选一)
   # token: "your-github-token"  # Set via environment variable GIT_TOKEN
   branch: "main"
   review_mode: "incremental"  # "full" or "incremental"

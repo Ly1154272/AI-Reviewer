@@ -133,7 +133,8 @@ class CodeDiff(BaseModel):
 
 class GitConfig(BaseModel):
     """Git repository configuration."""
-    url: str
+    url: Optional[str] = None
+    local_path: Optional[str] = None
     token: Optional[str] = None
     branch: str = "main"
     review_mode: ReviewMode = ReviewMode.INCREMENTAL

@@ -50,8 +50,10 @@ class Reviewer:
     
     async def run(self) -> ReviewReport:
         """Run the review process."""
+        repo_path = self.config.git.local_path or self.config.git.url or ""
+        
         report = ReviewReport(
-            repository=self.config.git.url,
+            repository=repo_path,
             branch=self.config.git.branch,
             mode=self.config.git.review_mode,
         )
@@ -105,7 +107,7 @@ class Reviewer:
     def _clone_repo(self) -> str:
         """Clone repository."""
         self.git_client = GitClient(self.config.git)
-        return self.git_client.clone()
+        return self.git_client.setup()
     
     def _parse_scan_results(self) -> list:
         """Parse external scan results."""
@@ -194,7 +196,8 @@ def load_config_from_env() -> ReviewerConfig:
     load_dotenv()
     
     git_config = GitConfig(
-        url=os.getenv("GIT_URL", ""),
+        url=os.getenv("GIT_URL"),
+        local_path=os.getenv("LOCAL_PATH"),
         token=os.getenv("GIT_TOKEN"),
         branch=os.getenv("GIT_BRANCH", "main"),
         review_mode=ReviewMode(
@@ -255,7 +258,8 @@ def load_config_from_yaml(config_path: str) -> ReviewerConfig:
     
     git_data = data.get('git', {})
     git_config = GitConfig(
-        url=git_data.get('url', ''),
+        url=git_data.get('url'),
+        local_path=git_data.get('local_path'),
         token=git_data.get('token'),
         branch=git_data.get('branch', 'main'),
         review_mode=ReviewMode(git_data.get('review_mode', 'incremental')),
@@ -328,6 +332,7 @@ def cli():
 @cli.command()
 @click.option("--config", "-c", help="Configuration file (YAML)")
 @click.option("--git-url", "-u", help="Git repository URL")
+@click.option("--local-path", "-l", help="Local repository path")
 @click.option("--git-token", "-t", help="Git access token")
 @click.option("--branch", "-b", default="main", help="Branch to review")
 @click.option("--mode", "-m", type=click.Choice(["full", "incremental"]), default="incremental", help="Review mode")
@@ -343,6 +348,7 @@ def cli():
 def review(
     config: Optional[str],
     git_url: Optional[str],
+    local_path: Optional[str],
     git_token: Optional[str],
     branch: str,
     mode: str,
@@ -365,12 +371,15 @@ def review(
     
     logger.info(f"AI Config loaded: provider={config.ai.provider}, model={config.ai.model}, base_url={config.ai.base_url}")
     
-    if not git_url:
+    if not git_url and not config.git.local_path:
         if not config.git.url:
-            console.print("[red]Error: --git-url is required (or set in config file)[/red]")
+            console.print("[red]Error: --git-url or local_path is required (set in config file or --git-url)[/red]")
             sys.exit(1)
     else:
-        config.git.url = git_url
+        if git_url:
+            config.git.url = git_url
+        if local_path:
+            config.git.local_path = local_path
         config.git.token = git_token or config.git.token
         config.git.branch = branch
         config.git.review_mode = ReviewMode(mode)
