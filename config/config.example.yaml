@@ -1,0 +1,58 @@
+# AI Reviewer Configuration
+
+# Git Configuration
+git:
+  url: "https://github.com/your-org/your-repo"
+  # token: "your-github-token"  # Set via environment variable GIT_TOKEN
+  branch: "main"
+  review_mode: "incremental"  # "full" or "incremental"
+
+# Scanner Configuration
+scanner:
+  # scan_results:
+  #   - "pmd.xml"
+  #   - "spotbugs.xml"
+  #   - "sonarqube.json"
+
+# RAG Configuration
+rag:
+  enabled: true
+  vector_store_dir: "./vector_store"
+  # embedding_model: "text-embedding-ada-002"  # OpenAI (需要外网)
+  # embedding_model: "BAAI/bge-small-zh-v1.5"    # 中文优化模型 (推荐内网)
+  embedding_model: "BAAI/bge-small-zh-v1.5"
+  local_model_path: null  # 内网本地模型路径，如 "./models/bge-small-zh-v1.5"
+  use_code_intent: true   # 是否使用 AST 提取代码意图（需要开启）
+  chunk_size: 1000
+  chunk_overlap: 100
+  top_k: 5
+
+# AI Configuration
+ai:
+  # provider: "openai"     # OpenAI API (需要外网)
+  # provider: "deepseek"  # DeepSeek API (需要外网)
+  # provider: "ollama"    # Ollama 本地部署 (适合内网)
+  # provider: "claude"   # Anthropic Claude
+  # provider: "azure"   # Azure OpenAI
+  provider: "ollama"
+  # model: "gpt-4"
+  # model: "deepseek-chat"
+  model: "llama2"  # Ollama 模型
+  # api_key: ""  # Set via environment variable (OPENAI_API_KEY, DEEPSEEK_API_KEY, etc.)
+  # base_url: ""  # For Azure OpenAI or custom Ollama/DeepSeek API
+  base_url: "http://localhost:11434"  # Ollama 默认地址
+  temperature: 0.3
+  max_tokens: 4096
+
+# Report Configuration
+report:
+  output_format: "json"  # "json", "html", or "markdown"
+  output_path: "./review_report.json"
+  include_false_positives: true
+  log_level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_file: null  # 日志文件路径，如 "./ai-reviewer.log"，null 则只输出到控制台
+
+# Rule Documents
+rule_docs:
+  - "./docs/coding_standards.md"
+  - "./docs/security_guidelines.md"

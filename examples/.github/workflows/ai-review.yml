@@ -1,0 +1,120 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Review mode'
+        required: true
+        default: 'incremental'
+        type: choice
+        options:
+          - incremental
+          - full
+
+env:
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -e .
+
+      - name: Run P3C/SpotBugs Scan
+        if: false  # Disable if CI already runs these
+        run: |
+          mvn pmd:pmd
+          mvn spotbugs:spotbugs
+
+      - name: Run AI Review
+        run: |
+          python ai_reviewer.py review \
+            --git-url "https://github.com/${{ github.repository }}" \
+            --git-token "${{ secrets.GITHUB_TOKEN }}" \
+            --branch "${{ github.base_ref }}" \
+            --mode "${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'incremental' }}" \
+            --scan-result pmd.xml,spotbugs.xml \
+            --rule-doc "./docs/coding_standards.md" \
+            --rule-doc "./docs/security_guidelines.md" \
+            --output review_report.json \
+            --ai-provider openai \
+            --ai-model gpt-4
+
+      - name: Upload Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: review-report
+          path: review_report.json
+
+      - name: Post Comment on PR
+        if: github.event_name == 'pull_request'
+        run: |
+          python -c "
+          import json
+          import os
+
+          with open('review_report.json', 'r') as f:
+              report = json.load(f)
+
+          summary = report.get('summary', {})
+          issues = report.get('issues', [])
+
+          comment = '''## AI Code Review Report
+
+          | Metric | Count |
+          |--------|-------|
+          | Total Issues | {total} |
+          | Critical | {critical} |
+          | Warning | {warning} |
+          | Info | {info} |
+          | False Positives | {fp} |
+
+          '''.format(
+              total=summary.get('total_issues', 0),
+              critical=summary.get('critical', 0),
+              warning=summary.get('warning', 0),
+              info=summary.get('info', 0),
+              fp=summary.get('false_positives', 0),
+          )
+
+          critical_issues = [i for i in issues if i.get('severity') == 'CRITICAL']
+          if critical_issues:
+              comment += '### Critical Issues\n\n'
+              for issue in critical_issues[:5]:
+                  comment += '- {}: {}\n'.format(issue.get('file', ''), issue.get('message', ''))
+              if len(critical_issues) > 5:
+                  comment += '\n... and {} more\n'.format(len(critical_issues) - 5)
+
+          with open('comment.md', 'w') as f:
+              f.write(comment)
+          "
+
+          curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            -d "{\"body\": $(cat comment.md | jq -Rs .)}"
