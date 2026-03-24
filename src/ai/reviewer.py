@@ -391,6 +391,9 @@ If no issues found, return an empty array: []
         """Parse AI response into Issue objects."""
         issues = []
         
+        if not result:
+            return issues
+        
         items = result
         if isinstance(result, dict):
             if "issues" in result:
@@ -402,6 +405,17 @@ If no issues found, return an empty array: []
             items = [items]
         
         for item in items:
+            if not item:
+                continue
+            
+            message = item.get("message", "")
+            file = item.get("file", "unknown")
+            
+            if not message or message.strip() == "":
+                continue
+            if file == "unknown" or not file:
+                continue
+            
             try:
                 severity_str = item.get("severity", "INFO")
                 severity = Severity(severity_str.upper())
@@ -410,10 +424,10 @@ If no issues found, return an empty array: []
             
             issue = Issue(
                 source=IssueSource.AI,
-                file=item.get("file", "unknown"),
+                file=file,
                 line=item.get("line"),
                 severity=severity,
-                message=item.get("message", ""),
+                message=message,
                 description=item.get("description"),
                 suggestion=item.get("suggestion"),
             )
