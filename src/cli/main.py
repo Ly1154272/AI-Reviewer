@@ -122,8 +122,17 @@ class Reviewer:
             return []
         
         changed_files = self.git_client.get_changed_files()
+        logger.info(f"Files to review: {len(changed_files)} files, mode={self.config.git.review_mode}")
+        
+        if not changed_files:
+            logger.warning("No files found to review")
+            return []
+        
         diffs = DiffAnalyzer.get_code_diffs(self.git_client.repo, changed_files)
+        logger.info(f"Diffs generated: {len(diffs)} diffs")
+        
         diff_text = DiffAnalyzer.format_diff_for_ai(diffs)
+        logger.info(f"Diff text length: {len(diff_text)} characters")
         
         provider = create_ai_provider(self.config.ai)
         self.ai_reviewer = AiReviewer(provider)
