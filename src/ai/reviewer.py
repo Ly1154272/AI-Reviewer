@@ -83,7 +83,10 @@ class OpenAIProvider(AiProvider):
         try:
             response_text = await self.chat(full_prompt)
         except Exception as e:
-            logger.error(f"AI chat request failed: {e}")
+            error_msg = str(e)
+            if hasattr(e, 'response') and hasattr(e.response, 'text'):
+                error_msg = f"{e}, response: {e.response.text}"
+            logger.error(f"AI chat request failed: {error_msg}")
             return {}
         
         response_text = response_text.strip()
