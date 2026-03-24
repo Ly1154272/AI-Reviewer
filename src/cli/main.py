@@ -380,8 +380,10 @@ def review(
     config.rag.enabled = not no_rag
     config.rag.vector_store_dir = vector_store
     
-    config.ai.provider = ai_provider
-    config.ai.model = ai_model
+    if ai_provider != "openai":
+        config.ai.provider = ai_provider
+    if ai_model != "gpt-4":
+        config.ai.model = ai_model
     if ai_api_key:
         config.ai.api_key = ai_api_key
     
