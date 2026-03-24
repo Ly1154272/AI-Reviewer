@@ -327,6 +327,7 @@ class AiReviewer:
             prompt = self._build_rule_review_prompt(code_diff, relevant_rules)
         
         try:
+            logger.info(f"AiReviewer.review_code: using provider model={self.provider.config.model}")
             result = await self.provider.chat_json(prompt)
             return self._parse_review_result(result)
         except Exception as e:
