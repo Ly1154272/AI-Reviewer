@@ -179,33 +179,59 @@ class RAGManager:
         if self._embeddings is None:
             self._init_embeddings()
         
-        try:
+        MarkdownTextSplitter = None
+        Chroma = None
+        
+        for splitter_class in [
+            "langchain.text_splitter.MarkdownTextSplitter",
+            "langchain_community.text_splitters.MarkdownTextSplitter",
+            "langchain_huggingface.text_splitters.MarkdownTextSplitter",
+            "langchain_core.text_splitter.MarkdownTextSplitter",
+        ]:
             try:
-                from langchain.text_splitter import MarkdownTextSplitter
-            except ImportError:
+                module_path, class_name = splitter_class.rsplit(".", 1)
+                module = __import__(module_path, fromlist=[class_name])
+                MarkdownTextSplitter = getattr(module, class_name)
+                break
+            except (ImportError, AttributeError):
+                continue
+        
+        if MarkdownTextSplitter is None:
+            for splitter_class in [
+                "langchain.text_splitter.RecursiveCharacterTextSplitter",
+                "langchain_community.text_splitters.RecursiveCharacterTextSplitter",
+            ]:
                 try:
-                    from langchain_community.text_splitters import MarkdownTextSplitter
-                except ImportError:
-                    try:
-                        from langchain_huggingface import HuggingFaceEmbeddings
-                        from langchain_huggingface.text_splitters import MarkdownTextSplitter
-                    except ImportError:
-                        try:
-                            from langchain_core.text_splitter import MarkdownTextSplitter
-                        except ImportError:
-                            from langchain.text_splitter import RecursiveCharacterTextSplitter
-                            MarkdownTextSplitter = RecursiveCharacterTextSplitter
-            
+                    module_path, class_name = splitter_class.rsplit(".", 1)
+                    module = __import__(module_path, fromlist=[class_name])
+                    MarkdownTextSplitter = getattr(module, class_name)
+                    break
+                except (ImportError, AttributeError):
+                    continue
+        
+        if MarkdownTextSplitter is None:
+            raise ImportError(
+                "No text splitter found. Please install: "
+                "pip install langchain langchain-community"
+            )
+        
+        for chroma_class in [
+            "langchain_community.vectorstores.chroma.Chroma",
+            "langchain_chroma.Chroma",
+        ]:
             try:
-                from langchain_community.vectorstores import Chroma
-            except ImportError:
-                try:
-                    from langchain_chroma import Chroma
-                except ImportError:
-                    raise ImportError(
-                        "Chroma not found. Please install: "
-                        "pip install langchain-chroma"
-                    )
+                module_path, class_name = chroma_class.rsplit(".", 1)
+                module = __import__(module_path, fromlist=[class_name])
+                Chroma = getattr(module, class_name)
+                break
+            except (ImportError, AttributeError):
+                continue
+        
+        if Chroma is None:
+            raise ImportError(
+                "Chroma not found. Please install: "
+                "pip install langchain-chroma"
+            )
             
             all_chunks = []
             for doc in rule_documents:
