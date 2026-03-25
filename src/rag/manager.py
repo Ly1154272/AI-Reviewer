@@ -189,12 +189,21 @@ class RAGManager:
                     try:
                         from langchain_huggingface.text_splitters import MarkdownTextSplitter
                     except ImportError:
-                        from langchain_core.text_splitter import MarkdownTextSplitter
+                        raise ImportError(
+                            "MarkdownTextSplitter not found. Please install: "
+                            "pip install langchain"
+                        )
             
             try:
                 from langchain_community.vectorstores import Chroma
             except ImportError:
-                from langchain_chroma import Chroma
+                try:
+                    from langchain_chroma import Chroma
+                except ImportError:
+                    raise ImportError(
+                        "Chroma not found. Please install: "
+                        "pip install langchain-chroma"
+                    )
             
             all_chunks = []
             for doc in rule_documents:
