@@ -187,12 +187,14 @@ class RAGManager:
                     from langchain_community.text_splitters import MarkdownTextSplitter
                 except ImportError:
                     try:
+                        from langchain_huggingface import HuggingFaceEmbeddings
                         from langchain_huggingface.text_splitters import MarkdownTextSplitter
                     except ImportError:
-                        raise ImportError(
-                            "MarkdownTextSplitter not found. Please install: "
-                            "pip install langchain"
-                        )
+                        try:
+                            from langchain_core.text_splitter import MarkdownTextSplitter
+                        except ImportError:
+                            from langchain.text_splitter import RecursiveCharacterTextSplitter
+                            MarkdownTextSplitter = RecursiveCharacterTextSplitter
             
             try:
                 from langchain_community.vectorstores import Chroma
