@@ -158,7 +158,10 @@ class RAGManager:
     def _load_index(self) -> None:
         """Load existing vector store."""
         try:
-            from langchain_community.vectorstores import Chroma
+            try:
+                from langchain_community.vectorstores import Chroma
+            except ImportError:
+                from langchain_chroma import Chroma
             
             self._vector_store = Chroma(
                 persist_directory=self.config.vector_store_dir,
@@ -183,9 +186,15 @@ class RAGManager:
                 try:
                     from langchain_community.text_splitters import MarkdownTextSplitter
                 except ImportError:
-                    from langchain_community.text_splitter import MarkdownTextSplitter
+                    try:
+                        from langchain_huggingface.text_splitters import MarkdownTextSplitter
+                    except ImportError:
+                        from langchain_core.text_splitter import MarkdownTextSplitter
             
-            from langchain_community.vectorstores import Chroma
+            try:
+                from langchain_community.vectorstores import Chroma
+            except ImportError:
+                from langchain_chroma import Chroma
             
             all_chunks = []
             for doc in rule_documents:
